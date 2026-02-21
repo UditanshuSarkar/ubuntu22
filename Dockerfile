@@ -1,26 +1,31 @@
 FROM ubuntu:22.04
 
+ENV container docker
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y \
+RUN apt update && apt install -y \
+    systemd \
+    systemd-sysv \
     openssh-server \
-    wget \
-    software-properties-common \
-    && add-apt-repository ppa:deadsnakes/ppa -y \
-    && apt-get update && apt-get install -y python3.12 python3.12-venv \
-    && apt-get clean
+    sudo \
+    qemu-kvm \
+    libvirt-daemon-system \
+    libvirt-clients \
+    bridge-utils \
+    && apt clean
 
-RUN wget https://bootstrap.pypa.io/get-pip.py \
-    && python3.12 get-pip.py \
-    && rm get-pip.py \
-    && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
+# Set root password
+RUN echo "root:root" | chpasswd
 
-RUN echo 'root:uditanshu' | chpasswd
-
+# Configure SSH
 RUN mkdir -p /var/run/sshd \
     && echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config \
     && echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config
 
+VOLUME [ "/sys/fs/cgroup" ]
+
 EXPOSE 22
 
-CMD ["/usr/sbin/sshd", "-D"]
+STOPSIGNAL SIGRTMIN+3
+
+CMD ["/sbin/init"]
